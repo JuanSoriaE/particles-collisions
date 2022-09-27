@@ -1,0 +1,21 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#ground {
+  width: 500px;
+  height: 500px;
+  border: 1px solid #000;
+  position: relative;
+}
+
+.particle {
+  width: 30px;
+  height: 30px;
+  background-color: red;
+  position: absolute;
+  translate: -15px 15px;
+  border-radius: 15px;
+}
