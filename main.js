@@ -2,8 +2,8 @@ const ground = document.getElementById('ground');
 
 let particles = [
   // Y test case
-  {id: 1, x: 100, y: 100, x_vel: 0, y_vel: 30, x_acc: 0, y_acc: 0},
-  {id: 2, x: 100, y: 400, x_vel: 0, y_vel: -30, x_acc: 0, y_acc: 0},
+  {id: 1, x: 100, y: 260, x_vel: 30, y_vel: 0, x_acc: 0, y_acc: 0},
+  {id: 2, x: 400, y: 240, x_vel: -30, y_vel: 0, x_acc: 0, y_acc: 0},
 
   // X test case
   {id: 3, x: 70, y: 100, x_vel: 30, y_vel: 0, x_acc: 0, y_acc: 0},
@@ -18,8 +18,7 @@ let particles = [
   {id: 8, x: 400, y: 400, x_vel: -100, y_vel: -100, x_acc: 0, y_acc: 0},
 ];
 
-const g = -9.8;
-const time_step = 0.02;
+const time_step = 0.016;
 const radius = 15;
 
 function sleep(ms) {
@@ -29,7 +28,7 @@ function sleep(ms) {
 function checkWallCollision(particle) {
   // If the particle crashes with a wall, it have to bounce.
   if (particle.x <= radius || particle.x >= 500 - radius) particle.x_vel = -particle.x_vel;
-  if (particle.y <= radius || particle.y >= 500 - radius) particle.y_vel = -particle.y_vel;
+  if (particle.y <= radius || particle.y >= 600 - radius) particle.y_vel = -particle.y_vel;
 }
 
 function checkParticleCollision(particle) {
@@ -39,15 +38,59 @@ function checkParticleCollision(particle) {
     // Calculate distance, if the distance is smaller than 2 times the radius, they are colliding.
     let distance = Math.sqrt(((particles[i].x - particle.x)**2) + (particles[i].y - particle.y)**2);
     if (distance <= 2*radius) {
-      // Swap x velocities
-      let x_vel_aux = particles[i].x_vel;
-      particles[i].x_vel = particle.x_vel;
-      particle.x_vel = x_vel_aux;
+      // 1: particle
+      // 2: particles[i]
 
-      // Swap y velocities
-      let y_vel_aux = particles[i].y_vel;
-      particles[i].y_vel = particle.y_vel;
-      particle.y_vel = y_vel_aux;
+      // Normal unit vector
+      let normal_vect = {
+        x: particles[i].x - particle.x,
+        y: particles[i].y - particle.y
+      };
+      let normal_unit_vect = {
+        x: normal_vect.x / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
+        y: normal_vect.y / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
+      };
+
+      // Tangent unit vector
+      let tangent_unit_vect = {
+        x: -normal_unit_vect.y,
+        y: normal_unit_vect.x
+      }
+
+      // Velocities in normal direction
+      let vel_1_n = normal_unit_vect.x*particle.x_vel + normal_unit_vect.y*particle.y_vel;
+      let vel_1_t = tangent_unit_vect.x*particle.x_vel + normal_unit_vect.y*particle.y_vel;
+
+      let vel_2_n = normal_unit_vect.x*particles[i].x_vel + normal_unit_vect.y*particles[i].y_vel;
+      let vel_2_t = tangent_unit_vect.x*particles[i].x_vel + normal_unit_vect.y*particles[i].y_vel;
+
+      let final_vel_1_n = vel_2_n;
+      let final_vel_2_n = vel_1_n;
+
+      // Vector of final velocities in normal and tangent direction
+      let final_vel_1_n_vect = {
+        x: final_vel_1_n*normal_unit_vect.x,
+        y: final_vel_1_n*normal_unit_vect.y
+      };
+      let final_vel_1_t_vect = {
+        x: vel_1_t*tangent_unit_vect.x,
+        y: vel_1_t*tangent_unit_vect.y
+      };
+
+      let final_vel_2_n_vect = {
+        x: final_vel_2_n*normal_unit_vect.x,
+        y: final_vel_2_n*normal_unit_vect.y
+      };
+      let final_vel_2_t_vect = {
+        x: vel_2_t*tangent_unit_vect.x,
+        y: vel_2_t*tangent_unit_vect.y
+      };
+      
+      // Final velocities assignment
+      particle.x_vel = final_vel_1_n_vect.x + final_vel_1_t_vect.x;
+      particle.y_vel = final_vel_1_n_vect.y + final_vel_1_t_vect.y;
+      particles[i].x_vel = final_vel_2_n_vect.x + final_vel_2_t_vect.x;
+      particles[i].y_vel = final_vel_2_n_vect.y + final_vel_2_t_vect.y;
     }
   }
 }
@@ -62,8 +105,8 @@ function update() {
     particle.y = particle.y + particle.y_vel*time_step;
 
     // New velocities
-    // particle.x_vel = particle.x_vel + 0*time_step;
-    // particle.y_vel = particle.y_vel + g*time_step;
+    // particle.x_vel = particle.x_vel + x_acc*time_step;
+    // particle.y_vel = particle.y_vel + y_acc*time_step;
 
     // Update position
     let particle_ele = document.getElementById(`particle-${particle.id}`);

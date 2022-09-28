@@ -4,17 +4,39 @@
   box-sizing: border-box;
 }
 
+body {
+  background-color: #1d0839;
+  font-family: Orbitron, sans-serif;
+}
+
+header {
+  text-align: center;
+}
+
+main {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+h1 {
+  color: #9808d6;
+  text-shadow: 0 0 10px #9808d6;
+}
+
 #ground {
   width: 500px;
-  height: 500px;
-  border: 1px solid #000;
+  height: 600px;
+  border: 3px solid #40097b;
+  box-shadow: 0 0 20px #40097b inset, 0 0 20px #40097b;
   position: relative;
 }
 
 .particle {
   width: 30px;
   height: 30px;
-  background-color: red;
+  background-color: #6806d4;
+  box-shadow: 0 0 20px #6806d4;
   position: absolute;
   translate: -15px 15px;
   border-radius: 15px;
