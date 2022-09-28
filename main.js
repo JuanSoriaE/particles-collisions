@@ -159,7 +159,7 @@ async function run() {
 }
 
 function main() {
-  generateParticles(20);
+  generateParticles(10);
   printParticles();
 }
 
