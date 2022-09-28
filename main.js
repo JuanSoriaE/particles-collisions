@@ -1,25 +1,11 @@
 const ground = document.getElementById('ground');
 
-let particles = [
-  // Y test case
-  {id: 1, x: 100, y: 260, x_vel: 30, y_vel: 0, x_acc: 0, y_acc: 0},
-  {id: 2, x: 400, y: 240, x_vel: -30, y_vel: 0, x_acc: 0, y_acc: 0},
-
-  // X test case
-  {id: 3, x: 70, y: 100, x_vel: 30, y_vel: 0, x_acc: 0, y_acc: 0},
-  {id: 4, x: 400, y: 100, x_vel: -30, y_vel: 0, x_acc: 0, y_acc: 0},
-
-  // 2d test case
-  {id: 5, x: 20, y: 200, x_vel: 30, y_vel: 30, x_acc: 0, y_acc: 0},
-  {id: 6, x: 200, y: 200, x_vel: -30, y_vel: -30, x_acc: 0, y_acc: 0},
-
-  // Special test case
-  {id: 7, x: 200, y: 400, x_vel: 100, y_vel: -100, x_acc: 0, y_acc: 0},
-  {id: 8, x: 400, y: 400, x_vel: -100, y_vel: -100, x_acc: 0, y_acc: 0},
-];
+let particles = [];
 
 const time_step = 0.016;
 const radius = 15;
+const max_vel = 60;
+const min_vel = -60;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -32,14 +18,12 @@ function checkWallCollision(particle) {
 }
 
 function checkParticleCollision(particle) {
-  for (let i = 0; i < particles.length; i++) {
-    if (particles[i].id == particle.id) continue;
-
+  for (let i = particle.id; i < particles.length; i++) {
     // Calculate distance, if the distance is smaller than 2 times the radius, they are colliding.
     let distance = Math.sqrt(((particles[i].x - particle.x)**2) + (particles[i].y - particle.y)**2);
     if (distance <= 2*radius) {
-      // 1: particle
-      // 2: particles[i]
+      // Object 1: particle
+      // Object 2: particles[i]
 
       // Normal unit vector
       let normal_vect = {
@@ -128,6 +112,32 @@ function printParticles() {
   });
 }
 
+function generateParticles(n) {
+  while (particles.length != n) {
+    // Coords
+    let x = (Math.random() * 470) + 15;
+    let y = (Math.random() * 570) + 15;
+
+    // Get the particles that would be overlapping
+    let overlapping_particles = particles.filter(particle => Math.abs(particle.x - x) <= 2*radius && Math.abs(particle.y - y) <= 2*radius);
+
+    // If there is overlapping particles, try again
+    if (overlapping_particles.length > 0) continue;
+
+    // {id: 2, x: 400, y: 240, x_vel: -30, y_vel: 0, x_acc: 0, y_acc: 0},
+    particles.push({
+      id: particles.length + 1,
+      x,
+      y,
+      // Min velocity of 20, and max of 100
+      x_vel: (Math.random() * (max_vel - min_vel)) + min_vel,
+      y_vel: (Math.random() * (max_vel - min_vel)) + min_vel,
+      x_acc: 0,
+      y_acc: 0
+    });
+  }
+}
+
 let play = false;
 
 window.addEventListener('keydown', e => {
@@ -149,6 +159,7 @@ async function run() {
 }
 
 function main() {
+  generateParticles(20);
   printParticles();
 }
 
