@@ -6,6 +6,7 @@ const time_step = 0.016;
 const radius = 15;
 const max_vel = 60;
 const min_vel = -60;
+const max_vel_magnitud = 84.8;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -136,6 +137,31 @@ function generateParticles(n) {
       y_acc: 0
     });
   }
+}
+
+function addParticle(x, y, x_vel, y_vel) {
+  const particle = {
+    id: particles.length + 1,
+    x,
+    y,
+    x_vel,
+    y_vel,
+    x_acc: 0,
+    y_acc: 0
+  };
+
+  // Print particle
+  const particle_ele = document.createElement('i');
+  particle_ele.classList.add('particle');
+  particle_ele.id = `particle-${particle.id}`;
+  
+  particle_ele.style.left = `${particle.x}px`;
+  particle_ele.style.bottom = `${particle.y}px`;
+  
+  ground.appendChild(particle_ele);  
+
+  // Add to the other particles to simulate it
+  particles.push(particle);
 }
 
 let play = false;
