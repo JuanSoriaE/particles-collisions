@@ -38,8 +38,8 @@ h1 {
   background-color: #6806d4;
   box-shadow: 0 0 20px #6806d4;
   position: absolute;
-  translate: -15px 15px;
-  border-radius: 15px;
+  translate: -50% 50%;
+  border-radius: 50%;
   pointer-events: none;
 }
 

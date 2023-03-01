@@ -1,100 +1,136 @@
 const ground = document.getElementById('ground');
 
-let particles = [];
+const particles = [];
 
 const time_step = 0.016;
 const radius = 15;
 const max_vel = 60;
 const min_vel = -60;
 const max_vel_magnitud = 84.8;
+const WIDTH = 500;
+const HEIGHT = 600;
+const NUM_ROWS = 10;
+const NUM_COLS = 10;
+const PX_ROW = Math.ceil(HEIGHT / NUM_ROWS);
+const PX_COL = Math.ceil(WIDTH / NUM_COLS);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function checkWallCollision(particle) {
-  // If the particle crashes with a wall, it have to bounce.
-  if (particle.x <= radius || particle.x >= 500 - radius) particle.x_vel = -particle.x_vel;
-  if (particle.y <= radius || particle.y >= 600 - radius) particle.y_vel = -particle.y_vel;
-}
+function addToQuadrant(particle, quadrants) {
+  const OFFSETS = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, -1], [1, 1]];
+  const x_coor = Math.floor(particle.x / PX_COL);
+  const y_coor = Math.floor(particle.y / PX_ROW);
+  
+  for (const offset of OFFSETS) {
+    // If not in bounce. Skip
+    if (x_coor + offset[0] > NUM_COLS - 1 || x_coor + offset[0] < 0) continue;
+    if (y_coor + offset[1] > NUM_ROWS - 1 || y_coor + offset[1] < 0) continue;
 
-function checkParticleCollision(particle) {
-  for (let i = particle.id; i < particles.length; i++) {
-    // Calculate distance, if the distance is smaller than 2 times the radius, they are colliding.
-    let distance = Math.sqrt(((particles[i].x - particle.x)**2) + (particles[i].y - particle.y)**2);
-    if (distance <= 2*radius) {
-      // Object 1: particle
-      // Object 2: particles[i]
-
-      // Normal unit vector
-      let normal_vect = {
-        x: particles[i].x - particle.x,
-        y: particles[i].y - particle.y
-      };
-      let normal_unit_vect = {
-        x: normal_vect.x / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
-        y: normal_vect.y / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
-      };
-
-      // Tangent unit vector
-      let tangent_unit_vect = {
-        x: -normal_unit_vect.y,
-        y: normal_unit_vect.x
-      }
-
-      // Velocities in normal direction
-      let vel_1_n = normal_unit_vect.x*particle.x_vel + normal_unit_vect.y*particle.y_vel;
-      let vel_1_t = tangent_unit_vect.x*particle.x_vel + normal_unit_vect.y*particle.y_vel;
-
-      let vel_2_n = normal_unit_vect.x*particles[i].x_vel + normal_unit_vect.y*particles[i].y_vel;
-      let vel_2_t = tangent_unit_vect.x*particles[i].x_vel + normal_unit_vect.y*particles[i].y_vel;
-
-      let final_vel_1_n = vel_2_n;
-      let final_vel_2_n = vel_1_n;
-
-      // Vector of final velocities in normal and tangent direction
-      let final_vel_1_n_vect = {
-        x: final_vel_1_n*normal_unit_vect.x,
-        y: final_vel_1_n*normal_unit_vect.y
-      };
-      let final_vel_1_t_vect = {
-        x: vel_1_t*tangent_unit_vect.x,
-        y: vel_1_t*tangent_unit_vect.y
-      };
-
-      let final_vel_2_n_vect = {
-        x: final_vel_2_n*normal_unit_vect.x,
-        y: final_vel_2_n*normal_unit_vect.y
-      };
-      let final_vel_2_t_vect = {
-        x: vel_2_t*tangent_unit_vect.x,
-        y: vel_2_t*tangent_unit_vect.y
-      };
-      
-      // Final velocities assignment
-      particle.x_vel = final_vel_1_n_vect.x + final_vel_1_t_vect.x;
-      particle.y_vel = final_vel_1_n_vect.y + final_vel_1_t_vect.y;
-      particles[i].x_vel = final_vel_2_n_vect.x + final_vel_2_t_vect.x;
-      particles[i].y_vel = final_vel_2_n_vect.y + final_vel_2_t_vect.y;
-    }
+    const key = (x_coor + offset[0]).toString() + "," + (y_coor + offset[1]).toString();
+    if (quadrants.has(key)) quadrants.get(key).add(particle.id);
+    else quadrants.set(key, new Set([particle.id]));
   }
 }
 
+function checkWallCollision(particle) {
+  // If the particle crashes with a wall, it have to bounce.
+  if (particle.x <= radius || particle.x >= WIDTH - radius) particle.x_vel = -particle.x_vel;
+  if (particle.y <= radius || particle.y >= HEIGHT - radius) particle.y_vel = -particle.y_vel;
+}
+
+function checkParticlesCollision(particle1, particle2, calculated_colls) {
+  // Calculate distance, if the distance is smaller than 2 times the radius, they are colliding.
+  const distance = (particle2.x - particle1.x)**2 + (particle2.y - particle1.y)**2;
+  if (distance > 4*radius**2 + 2) return;
+
+  calculated_colls.add(particle1.id + "," + particle2.id);
+  // Normal unit vector
+  const normal_vect = {
+    x: particle2.x - particle1.x,
+    y: particle2.y - particle1.y
+  };
+  const normal_unit_vect = {
+    x: normal_vect.x / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
+    y: normal_vect.y / (Math.sqrt(normal_vect.x**2 + normal_vect.y**2)),
+  };
+
+    // Tangent unit vector
+  const tangent_unit_vect = {
+    x: -normal_unit_vect.y,
+    y: normal_unit_vect.x
+  }
+
+  // Velocities in normal direction
+  const vel_1_n = normal_unit_vect.x*particle1.x_vel + normal_unit_vect.y*particle1.y_vel;
+  const vel_1_t = tangent_unit_vect.x*particle1.x_vel + normal_unit_vect.y*particle1.y_vel;
+
+  const vel_2_n = normal_unit_vect.x*particle2.x_vel + normal_unit_vect.y*particle2.y_vel;
+  const vel_2_t = tangent_unit_vect.x*particle2.x_vel + normal_unit_vect.y*particle2.y_vel;
+
+  const final_vel_1_n = vel_2_n;
+  const final_vel_2_n = vel_1_n;
+
+  // Vector of final velocities in normal and tangent direction
+  const final_vel_1_n_vect = {
+    x: final_vel_1_n*normal_unit_vect.x,
+    y: final_vel_1_n*normal_unit_vect.y
+  };
+  const final_vel_1_t_vect = {
+    x: vel_1_t*tangent_unit_vect.x,
+    y: vel_1_t*tangent_unit_vect.y
+  };
+
+  const final_vel_2_n_vect = {
+    x: final_vel_2_n*normal_unit_vect.x,
+    y: final_vel_2_n*normal_unit_vect.y
+  };
+  const final_vel_2_t_vect = {
+    x: vel_2_t*tangent_unit_vect.x,
+    y: vel_2_t*tangent_unit_vect.y
+  };
+      
+  // Final velocities assignment
+  particle1.x_vel = final_vel_1_n_vect.x + final_vel_1_t_vect.x;
+  particle1.y_vel = final_vel_1_n_vect.y + final_vel_1_t_vect.y;
+  particle2.x_vel = final_vel_2_n_vect.x + final_vel_2_t_vect.x;
+  particle2.y_vel = final_vel_2_n_vect.y + final_vel_2_t_vect.y
+}
+
 function update() {
+  const quadrants = new Map();
+  const calculated_colls = new Set();
+
+  // Spatial partitioning classification
   particles.forEach(particle => {
+    addToQuadrant(particle, quadrants);
     checkWallCollision(particle);
-    checkParticleCollision(particle);
-    
-    // New position
+  });
+
+  // Detect and Handle collision by quadrants
+  quadrants.forEach(item => {
+    const arr = Array.from(item);
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        const particle1 = particles[arr[i] - 1];
+        const particle2 = particles[arr[j] - 1];
+
+        // If possible collision and already calculated
+        if (calculated_colls.has(particle1.id + "," + particle2.id)) continue;
+
+        checkParticlesCollision(particle1, particle2, calculated_colls);
+      }
+    }
+  });
+
+  particles.forEach(particle => {
+    // New Position
     particle.x = particle.x + particle.x_vel*time_step;
     particle.y = particle.y + particle.y_vel*time_step;
 
-    // New velocities
-    // particle.x_vel = particle.x_vel + x_acc*time_step;
-    // particle.y_vel = particle.y_vel + y_acc*time_step;
-
     // Update position
-    let particle_ele = document.getElementById(`particle-${particle.id}`);
+    const particle_ele = document.getElementById(`particle-${particle.id}`);
     particle_ele.style.left = `${particle.x}px`;
     particle_ele.style.bottom = `${particle.y}px`;
   });
@@ -116,16 +152,15 @@ function printParticles() {
 function generateParticles(n) {
   while (particles.length != n) {
     // Coords
-    let x = (Math.random() * 470) + 15;
-    let y = (Math.random() * 570) + 15;
+    const x = (Math.random() * (WIDTH - 2*radius)) + radius;
+    const y = (Math.random() * (HEIGHT - 2*radius)) + radius;
 
     // Get the particles that would be overlapping
-    let overlapping_particles = particles.filter(particle => Math.abs(particle.x - x) <= 2*radius && Math.abs(particle.y - y) <= 2*radius);
+    const overlapping_particles = particles.filter(particle => Math.abs(particle.x - x) <= 2*radius && Math.abs(particle.y - y) <= 2*radius);
 
     // If there is overlapping particles, try again
     if (overlapping_particles.length > 0) continue;
 
-    // {id: 2, x: 400, y: 240, x_vel: -30, y_vel: 0, x_acc: 0, y_acc: 0},
     particles.push({
       id: particles.length + 1,
       x,
@@ -176,11 +211,9 @@ window.addEventListener('keydown', e => {
 async function run() {
   play = true;
   
-  let i = 0;
   while (play) {
     update();
     await sleep(time_step*1000);
-    i++;
   }
 }
 

@@ -21,7 +21,6 @@ ground.addEventListener('mousemove', e => {
   let adjacent = mouse_final_x - mouse_initial_x;
   let angle = Math.atan(opposite / adjacent);
 
-  console.log(angle)
   let angle_to_rotate;
   if (mouse_final_x > mouse_initial_x) angle_to_rotate = angle + Math.PI * 3 / 2;
   else angle_to_rotate = angle + Math.PI * 1 / 2;
@@ -64,5 +63,3 @@ ground.addEventListener('mouseup', e => {
   addParticle(x, y, x_vel, y_vel);
   flag = false;
 });
-
-
